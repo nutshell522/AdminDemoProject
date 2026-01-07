@@ -1,0 +1,28 @@
+# Stage 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# 先 Copy csproj 還原套件 (利用 Docker Layer Cache 加速)
+# 假設路徑結構為 src/Backend/MyDemo.Api/MyDemo.Api.csproj
+COPY ["MyDemo.Api/MyDemo.Api.csproj", "MyDemo.Api/"]
+# 如果有其他 Core/Infra 專案也要在這裡 Copy
+# COPY ["MyDemo.Core/MyDemo.Core.csproj", "MyDemo.Core/"]
+# COPY ["MyDemo.Infra/MyDemo.Infra.csproj", "MyDemo.Infra/"]
+
+RUN dotnet restore "MyDemo.Api/MyDemo.Api.csproj"
+
+# Copy 其餘程式碼並編譯
+COPY . .
+WORKDIR "/src/MyDemo.Api"
+RUN dotnet build "MyDemo.Api.csproj" -c Release -o /app/build
+
+# Stage 2: Publish
+FROM build AS publish
+RUN dotnet publish "MyDemo.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Stage 3: Final Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "MyDemo.Api.dll"]
