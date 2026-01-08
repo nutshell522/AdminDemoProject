@@ -1,0 +1,14 @@
+data/
+mssql_data/
+
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+packages/
+
+node_modules/
